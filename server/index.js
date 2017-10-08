@@ -6,7 +6,6 @@ const keys = require('../config/keys');
 const Twit = require('twit');
 const socketIO = require('socket.io');
 const publicPath = path.join(__dirname, '../client/');
-const { Users } = require('../utils/users');
 
 const PORT = process.env.PORT || 5000;
 
@@ -14,9 +13,6 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
 
-const users = new Users();
-
-//link static files such as pictures in public into express
 app.use(express.static(publicPath));
 
 app.get('/admin',(res,rep) => {
@@ -38,44 +34,20 @@ var T = new Twit({
 let filter = { track: [] };
 
 io.on('connection',(socket) => {
-  users.addUser(socket.id);
+
   console.log(`New user connected, ${Date.now()}`);
 
   let stream;
   let streamOn;
+  let currentAdminFilter;
 
-  socket.on('adminFilterInput', (adminFilter) => {
-    if (streamOn) {
-      stream.stop();
-      streamOn = true;
-    }
-    console.log('Filter: ',filter);
-    for(let key in adminFilter) {
-      filter[key] ? filter[key].push(adminFilter[key]) : filter[key] = [adminFilter[key]];
-    }
-
-    if (streamOn) {
-      stream = T.stream('statuses/filter', filter);
-      
-    }
-
-    console.log('Filter: ',filter);
-  });
-
-  socket.on('searchHashtag', (hashtag) => {
-
-    hashtag = hashtag.trim();
-    hashtag = hashtag.charAt(0) === '#' ? hashtag : `#${hashtag}`;
-
-    filter.track.push(hashtag);
-    console.log('Filter: ',filter);
+  const fetchAndPostTwit = () => {
     if (streamOn) {
       stream.stop();
     }
 
     stream = T.stream('statuses/filter', filter);
-    //console.log('hashtag list',users.getHashtagList());
-    //stream starts after user input hashtag
+
     stream.on('tweet', (tweet) => {
       console.log('tweet:!!!!!!!!!!!!!!',tweet);
         socket.emit('newTwt',tweet);
@@ -85,10 +57,30 @@ io.on('connection',(socket) => {
 
     socket.on('disconnect',() => {
       stream.stop();
-      if (users.getUser(socket.id)) {
-        users.removeUser(socket.id);
-      }
     });
+
+  }
+
+  socket.on('adminFilterInput', (adminFilter) => {
+    currentAdminFilter = adminFilter;
+    console.log('Filter: ',filter);
+    for(let key in adminFilter) {
+      filter[key] ? filter[key].push(adminFilter[key]) : filter[key] = [adminFilter[key]];
+    }
+    console.log('Filter: ',filter);
+
+    fetchAndPostTwit();
+  });
+
+  socket.on('searchHashtag', (hashtag) => {
+
+    hashtag = hashtag.trim();
+    hashtag = hashtag.charAt(0) === '#' ? hashtag : `#${hashtag}`;
+
+    filter.track.push(hashtag);
+    console.log('Filter: ',filter);
+
+    fetchAndPostTwit();
 
   });
 

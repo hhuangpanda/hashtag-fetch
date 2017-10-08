@@ -13,11 +13,12 @@
   <body>
 
     <a href="/">Home</a>
-
+    <p> Setting Twit Search Filter</p>
     <form id="admin-filter-form" action="/views/admin.html" method="post">
-      <input id="hashtag-input" name="track" type="text" placeholder=" Type to search hashtag, e.g. 'apple,banana' or 'orange'" autofocus autocomplete="off">
-      <input id="hashtag-input" name="location" type="text" placeholder=" Type to search hashtag, e.g. 'apple,banana' or 'orange'" >
-      <button class="submit">Send</button>
+      <input id="hashtag-input" name="track" type="text" placeholder=" hashtag " autofocus autocomplete="off">
+      <input id="hashtag-input" name="location" type="text" placeholder=" location " >
+      <input id="hashtag-input" name="follow" type="text" placeholder=" user name " >
+      <button class="submit"> Save </button>
     </form>
 
     <script src="/socket.io/socket.io.js"></script>
