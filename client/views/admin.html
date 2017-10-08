@@ -13,11 +13,19 @@
   <body>
 
     <a href="/">Home</a>
-    <p> Setting Twit Search Filter</p>
-    <form id="admin-filter-form" action="/views/admin.html" method="post">
-      <input id="hashtag-input" name="track" type="text" placeholder=" hashtag " autofocus autocomplete="off">
-      <input id="hashtag-input" name="location" type="text" placeholder=" location " >
-      <input id="hashtag-input" name="follow" type="text" placeholder=" user name " >
+
+    <div>
+      <select id="admin-filter-form-select">
+        <option value="overwrite">Overwrite Current Twit Search Filter with New Filter</option>
+        <option value="addNew">Add New Twit Search Filter To Current Filter</option>
+        <option value="delete">Delete Twit Search Filter from Current Filter</option>
+      </select>
+    </div>
+
+    <form id="admin-filter-form" action="/views/admin.html" method="post" formtype="overwrite">
+      <input class="admin-input" id="hashtag-inputt" name="track" type="text" placeholder=" hashtag " autofocus autocomplete="off">
+      <input class="admin-input" name="location" type="text" placeholder=" location " >
+      <input class="admin-input" name="follow" type="text" placeholder=" user name " >
       <button class="submit"> Save </button>
     </form>
 

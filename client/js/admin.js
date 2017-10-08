@@ -1,5 +1,9 @@
 var socket = io();
 
+$('#admin-filter-form-select').change(function(){
+  $('#admin-filter-form').attr('formtype', $('#admin-filter-form-select').val());
+});
+
 $('#admin-filter-form').on('submit', function(e) {
   e.preventDefault();
 
@@ -21,7 +25,9 @@ $('#admin-filter-form').on('submit', function(e) {
 
   }
 
-  socket.emit('adminFilterInput', adminFilter);
+  socket.emit('adminFilterInput', [adminFilter, $('#admin-filter-form').attr('formtype')]);
+
+  $('#hashtag-inputt').val('');
 
 
 });

@@ -35,21 +35,23 @@ var T = new Twit({
 });
 
 //------------------init the filter for fetching twit ----------------------------
-let filter = { track: [''] };
+let filter = { track: [] };
+let socketId;
+let adminId;
+let streamOn;
+let currentAdminFilter;
+let stream;
 
 //---------------io listens on new socket connected on the client side ---------------------
 io.on('connection',(socket) => {
 
   console.log(`New user connected, ${Date.now()}`);
 
-  let stream;
-  let streamOn;
-  let currentAdminFilter;
 
 //function to fetch twit using stream and post twit to the front using socket.io
 // it will be called when user submits a new hashtag search
 // or admin sets a new filter
-  const fetchAndPostTwit = () => {
+  const fetchAndPostTwit = (socketId) => {
 
     //if streaming is currently on, stop it,
     //since the filter for fetching twit is changed
@@ -58,6 +60,7 @@ io.on('connection',(socket) => {
 
     if (streamOn) {
       stream.stop();
+      streamOn = false;
     }
 
     //start a streaming with a filter
@@ -66,9 +69,11 @@ io.on('connection',(socket) => {
     //listen on new tweet
     stream.on('tweet', (tweet) => {
 
-      console.log('tweet:!!!!!!!!!!!!!!',tweet);
+      // console.log('tweet:!!!!!!!!!!!!!!',tweet);
+      console.log('new tweet, ', filter.track);
         // emit new tweet to front. Socket in index.js in the client/views folder is listening to this
-        socket.emit('newTwt',tweet);
+
+        io.to(socketId).emit('newTwt',tweet);
     });
 
     //set it to on so the the code at line 57 knows,
@@ -77,35 +82,57 @@ io.on('connection',(socket) => {
 
     //stop the stream when the socket is disconnected, e.g. browser closed
     // otherwise the streaming will continue as long as the server is on
-    socket.on('disconnect',() => {
-      stream.stop();
-    });
+    if (socket.id !== adminId) {
+      socket.on('disconnect',() => {
+        stream.stop();
+        streamOn = false;
+      });
+    }
 
   }
 
 //---------You can ignore this part for now, I am still working on it---------------
 // this part is for when admin sets a filter for the twit user would get, by e.g. location, username
   socket.on('adminFilterInput', (adminFilter) => {
+    adminId = socket.id;
+    // currentAdminFilter = adminFilter[0];
+        console.log('adminFilter', adminFilter[0]);
+        let i = 0;
 
-    currentAdminFilter = adminFilter;
+        for(let key in adminFilter[0]) {
+          switch (adminFilter[1]) {
 
-    console.log('Filter: ',filter);
+            case "addNew":
+              filter[key] ? filter[key].push(adminFilter[0][key]) : filter[key] = [adminFilter[0][key]];
+              break;
 
-    //-----update the filter, not finishd------------------------------
-    for(let key in adminFilter) {
-      filter[key] ? filter[key].push(adminFilter[key]) : filter[key] = [adminFilter[key]];
-    }
+            case "delete":
+              filter[key] = filter[key].filter((elem) => {
+                return elem !== adminFilter[0][key];
+              });
+              break;
+
+            default:
+              if (i === 0) {
+                filter = {};
+              }
+              filter[key] = [adminFilter[0][key]]
+              i++;
+          }
+        }
+
     console.log('Filter: ',filter);
 
     //-----once the filter is updated, call the function below to start new streaming again based on new filter
-    fetchAndPostTwit();
+    fetchAndPostTwit(socketId);
   });
 //-----------------------------------------------------------------
 
 //----it listens the event that user submits the hashtag,
 //-----the event is send by the code socket.emit('searchHashtag', hashtagInputBox.val()); at client/js/index  ------------------------
   socket.on('searchHashtag', (hashtag) => {
-
+    socketId = socket.id;
+    console.log('socket.id: ', socketId);
     //Sanitize the user input
     hashtag = hashtag.trim();
     hashtag = hashtag.charAt(0) === '#' ? hashtag : `#${hashtag}`;
@@ -116,7 +143,7 @@ io.on('connection',(socket) => {
     filter.track[0] = hashtag;
     console.log('Filter: ',filter);
 
-    fetchAndPostTwit();
+    fetchAndPostTwit(socket.id);
 
   });
 
